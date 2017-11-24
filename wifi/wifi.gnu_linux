@@ -1,0 +1,135 @@
+#!/bin/sh
+
+# Copyright (c) 2015 Markus Uhlin. All rights reserved.
+#
+# The shell script sets up a connection to a wireless network by using
+# the 'wpa_supplicant'.
+
+############################################################
+# 			  SETTINGS                         #
+############################################################
+
+MKTEMP=/bin/mktemp
+WPA_SUPPLICANT=/sbin/wpa_supplicant
+DHCLIENT=/sbin/dhclient
+WIFI_TMP_DIR=/tmp/wifi
+
+NETWORK_NAME=""
+NETWORK_SECURITY=WPA-PSK # Set to 'NONE' for public networks.
+NETWORK_PASSWORD=""
+
+WIRELESS_IFACE=eth0
+
+# A comma seperated list. Leave it empty in order to not pass the -D flag to wpa_supplicant.
+IFACE_DRIVERS="wext,bsd"
+
+############################################################
+# 		      PROGRAM/COMMANDS                     #
+############################################################
+
+printf "  - UID 0 check..."
+test "$(id -un)" = "root" || { printf "give me root or it won't work\n"; exit 1; }
+sleep 1 && printf "ok\n"
+
+BINARIES="$MKTEMP $WPA_SUPPLICANT $DHCLIENT"
+
+for bin in $BINARIES; do
+    printf "  - checking for %s..." "$bin"
+    test -x "$bin" || { printf "FATAL: not found\n"; exit 1; }
+    sleep 1 && printf "found\n"
+done
+
+printf "  - checking for %s..." "$WIFI_TMP_DIR"
+if test -d "$WIFI_TMP_DIR"; then
+    printf "found\n"
+else
+    printf "not found\n"
+
+    printf "  - creating %s..." "$WIFI_TMP_DIR"
+    mkdir -p "$WIFI_TMP_DIR" || { printf "fail\n"; exit 1; }
+    printf "ok\n"
+fi
+
+wpa_supplicant_config_file=$($MKTEMP -p $WIFI_TMP_DIR)
+
+# FIXME: no error checking here
+printf "  - creating %s..." "$wpa_supplicant_config_file"
+touch "$wpa_supplicant_config_file"
+if test "$NETWORK_SECURITY" != "NONE"; then
+    cat <<EOF >>"$wpa_supplicant_config_file"
+network={
+  ssid="$NETWORK_NAME"
+  scan_ssid=1
+  key_mgmt=$NETWORK_SECURITY
+  psk="$NETWORK_PASSWORD"
+}
+EOF
+else # public network
+    cat <<EOF >>"$wpa_supplicant_config_file"
+network={
+  ssid="$NETWORK_NAME"
+  scan_ssid=1
+  key_mgmt=NONE
+}
+EOF
+fi
+printf "ok\n"
+
+printf "\n*** %s ***\n" "$wpa_supplicant_config_file"
+cat "$wpa_supplicant_config_file"
+
+# Delete the config file on failure below here because it perhaps
+# contain a network password.
+
+printf "  - bringing %s down..." "$WIRELESS_IFACE"
+ifconfig "$WIRELESS_IFACE" down || { printf "fail\n"; rm -f "$wpa_supplicant_config_file"; exit 1; }
+printf "ok\n"
+
+PROCESS_NAMES="wpa_supplicant dhclient"
+
+for name in $PROCESS_NAMES; do
+    printf "  - killall %s..." "$name"
+    killall -q -9 "$name"
+    printf "ok\n"
+done
+
+FILES="/var/run/dhclient.pid /var/lib/dhcp/dhclient.leases"
+
+for file in $FILES; do
+    printf "  - deleting %s..." "$file"
+    
+    if test -f "$file"; then
+	rm -f "$file"
+	printf "ok\n"
+    else
+	printf "not found\n"
+    fi
+done
+
+printf "  - perform flush of: %s..." "$WIRELESS_IFACE"
+ip addr flush "$WIRELESS_IFACE" || { printf "fail\n"; rm -f "$wpa_supplicant_config_file"; exit 1; }
+printf "ok\n"
+
+printf "\n*** issuing: %s ***\n" "$WPA_SUPPLICANT"
+if test -n "$IFACE_DRIVERS"; then
+    "$WPA_SUPPLICANT" -B -i "$WIRELESS_IFACE" -c "$wpa_supplicant_config_file" -D "$IFACE_DRIVERS"
+else # Don't pass -D
+    "$WPA_SUPPLICANT" -B -i "$WIRELESS_IFACE" -c "$wpa_supplicant_config_file"
+fi
+
+# Delete the config file. It's no longer needed.
+printf "  - cleaning up..."
+rm -f "$wpa_supplicant_config_file" || { printf "fail\n"; exit 1; }
+printf "ok\n"
+
+printf "  - bringing %s up..." "$WIRELESS_IFACE"
+ifconfig "$WIRELESS_IFACE" up || { printf "fail\n"; exit 1; }
+printf "ok\n"
+
+printf "Please wait.\n"
+"$DHCLIENT" -v "$WIRELESS_IFACE"
+printf "%bdone%b\n" "\033[1;32m" "\033[0m"
+
+exit 0
+
+# EOF
