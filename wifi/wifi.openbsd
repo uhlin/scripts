@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Copyright (c) 2015 Markus Uhlin. All rights reserved.
+#
+# The shell script sets up a connection to a wireless network on the
+# OpenBSD platform.
+
+############################################################
+# 			  SETTINGS                         #
+############################################################
+
+WIRED_IFACE=em0
+WIRELESS_IFACE=iwn0
+
+NETWORK_NAME=""
+NETWORK_CHANNEL=
+NETWORK_MAC_ADDR=
+NETWORK_WPAKEY=""
+
+############################################################
+# 		      PROGRAM/COMMANDS                     #
+############################################################
+
+if test "$(id -un)" != "root"; then
+    echo "You're not root"
+    exit 1
+fi
+
+printf "  - checking for ifconfig..."
+test -x "$(which ifconfig)" || { printf "not found\n"; exit 1; }
+sleep 1 && printf "found!\n"
+
+printf "  - checking for dhclient..."
+test -x "$(which dhclient)" || { printf "not found\n"; exit 1; }
+sleep 1 && printf "found!\n"
+
+printf "  - bringing %s down..." "$WIRED_IFACE"
+ifconfig "$WIRED_IFACE" down || { printf "fail\n"; exit 1; }
+printf "ok\n"
+
+printf "  - bringing %s down..." "$WIRELESS_IFACE"
+ifconfig "$WIRELESS_IFACE" down || { printf "fail\n"; exit 1; }
+printf "ok\n"
+
+printf "  - configuring %s (%s)..." "$WIRELESS_IFACE" "$NETWORK_NAME"
+if test -n "$NETWORK_WPAKEY"; then
+    ifconfig "$WIRELESS_IFACE" nwid "$NETWORK_NAME" chan "$NETWORK_CHANNEL" bssid "$NETWORK_MAC_ADDR" wpakey "$NETWORK_WPAKEY" || \
+	{ printf "fail\n"; exit 1; }
+else
+    ifconfig "$WIRELESS_IFACE" nwid "$NETWORK_NAME" chan "$NETWORK_CHANNEL" bssid "$NETWORK_MAC_ADDR" || \
+	{ printf "fail\n"; exit 1; }
+fi
+printf "ok\n"
+
+printf "  - bringing %s up..." "$WIRELESS_IFACE"
+ifconfig "$WIRELESS_IFACE" up || { printf "fail\n"; exit 1; }
+printf "ok\n"
+
+dhclient "$WIRELESS_IFACE"
+exit 0
