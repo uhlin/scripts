@@ -18,14 +18,6 @@
 CPUEXECUTIONCAP=75
 CPUS=2
 
-# 1) none
-# 2) default
-# 3) legacy
-# 4) minimal
-# 5) hyperv
-# 6) kvm
-PARAVIRTPROVIDER=hyperv
-
 VRDEPORT=13389
 
 fatal () {
@@ -51,6 +43,13 @@ read -p 'OS type (Execute: VBoxManage list ostypes): ' ostype
 read -p 'HD size in MB: ' size
 read -p 'DVD medium (ISO with the operating system): ' medium
 read -p 'RAM Memory in MB: ' mem
+echo "  1) none"
+echo "  2) default"
+echo "  3) legacy"
+echo "  4) minimal"
+echo "  5) hyperv"
+echo "  6) kvm"
+read -p 'Paravirtualization provider: ' paravirtprovider
 read -p 'Username: ' user
 read -p 'RDP password: ' -s pass
 
@@ -61,6 +60,7 @@ if test -z "$name"\
 	-o -z "$size"\
 	-o -z "$medium"\
 	-o -z "$mem"\
+	-o -z "$paravirtprovider"\
 	-o -z "$user"\
 	-o -z "$pass"; then
     echo "fatal: empty input"
@@ -108,7 +108,7 @@ VBoxManage modifyvm "$name"\
 	--memory "$mem"\
 	--nestedpaging on\
 	--nic1 none\
-	--paravirtprovider "$PARAVIRTPROVIDER"\
+	--paravirtprovider "$paravirtprovider"\
 	--vram 128\
 	--vrdeauthtype external\
 	--vrdeextpack "Oracle VM VirtualBox Extension Pack" || fatal
@@ -127,5 +127,4 @@ echo "connect to it using rdesktop (after starting the vm)"
 echo ""
 echo "CPUEXECUTIONCAP:  $CPUEXECUTIONCAP"
 echo "CPUS:             $CPUS"
-echo "PARAVIRTPROVIDER: $PARAVIRTPROVIDER"
 echo ""
