@@ -15,7 +15,17 @@
 # 	VBoxManage extpack install
 # 	    Oracle_VM_VirtualBox_Extension_Pack-5.1.38.vbox-extpack
 
+CPUEXECUTIONCAP=75
 CPUS=2
+
+# 1) none
+# 2) default
+# 3) legacy
+# 4) minimal
+# 5) hyperv
+# 6) kvm
+PARAVIRTPROVIDER=hyperv
+
 VRDEPORT=13389
 
 fatal () {
@@ -83,9 +93,22 @@ VBoxManage storageattach "$name"\
 	--medium "${name}.vdi" || fatal
 
 VBoxManage modifyvm "$name"\
+	--accelerate2dvideo off\
+	--accelerate3d off\
+	--audio none\
+	--audioin off\
+	--audioout off\
 	--boot1 dvd --boot2 disk --boot3 none --boot4 none\
+	--clipboard disabled\
+	--cpuexecutioncap "$CPUEXECUTIONCAP"\
 	--cpus "$CPUS"\
+	--draganddrop disabled\
+	--hwvirtex off\
+	--largepages on\
 	--memory "$mem"\
+	--nestedpaging on\
+	--nic1 none\
+	--paravirtprovider "$PARAVIRTPROVIDER"\
 	--vram 128\
 	--vrdeauthtype external\
 	--vrdeextpack "Oracle VM VirtualBox Extension Pack" || fatal
