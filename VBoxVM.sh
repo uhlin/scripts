@@ -16,7 +16,7 @@
 # 	    Oracle_VM_VirtualBox_Extension_Pack-5.1.38.vbox-extpack
 
 CPUS=2
-VRDEPORT=5959
+VRDEPORT=13389
 
 fatal () {
     echo "fatal error"
