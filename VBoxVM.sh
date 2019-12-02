@@ -81,11 +81,13 @@ VBoxManage createhd\
 	--variant Fixed || fatal
 
 VBoxManage storagectl "$name" --name sata_ctl --add sata || fatal
+
 VBoxManage storageattach "$name"\
 	--storagectl sata_ctl\
 	--port 0 --device 0\
 	--type dvddrive\
 	--medium "$medium" || fatal
+
 VBoxManage storageattach "$name"\
 	--storagectl sata_ctl\
 	--port 1 --device 0\
@@ -114,7 +116,9 @@ VBoxManage modifyvm "$name"\
 	--vrdeextpack "Oracle VM VirtualBox Extension Pack" || fatal
 
 VBoxManage setproperty vrdeauthlibrary "VBoxAuthSimple"
+
 pw_hash=$(VBoxManage internalcommands passwordhash "$pass" | awk '{ print $3 }')
+
 VBoxManage setextradata "$name" "VBoxAuthSimple/users/$user" "$pw_hash"
 
 VBoxManage modifyvm "$name" --vrde on --vrdeport "$VRDEPORT"
