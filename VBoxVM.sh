@@ -39,6 +39,10 @@ if test ! -f "$(which VBoxManage)"; then
 fi
 
 read -p 'VM name: ' name
+echo "  FreeBSD (64-bit):    FreeBSD_64"
+echo "  NetBSD (64-bit):     NetBSD_64"
+echo "  OpenBSD (64-bit):    OpenBSD_64"
+echo "  Windows 10 (64-bit): Windows10_64"
 read -p 'OS type (Execute: VBoxManage list ostypes): ' ostype
 read -p 'HD size in MB: ' size
 read -p 'DVD medium (ISO with the operating system): ' medium
