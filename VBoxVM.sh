@@ -15,7 +15,7 @@
 # 	VBoxManage extpack install
 # 	    Oracle_VM_VirtualBox_Extension_Pack-5.1.38.vbox-extpack
 
-CPUEXECUTIONCAP=85
+CPUEXECUTIONCAP=80
 CPUS=2
 
 VRDEPORT=13389
